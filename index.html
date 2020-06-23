@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Add meta tags for mobile and IE -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  <style>
+    /* Media query for mobile viewport */
+    @media screen and (max-width: 400px) {
+      #paypal-button-container {
+        width: 100%;
+        flex: auto;
+      }
+    }
+
+    /* Media query for desktop viewport */
+    @media screen and (min-width: 400px) {
+      #paypal-button-container {
+        width: 250px;
+        margin: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrapper" style="text-align:center">
+    <p style="text-align:center">
+    <h2 style="text-align:center">Paypal web integration</h2>
+    </p>
+
+    <div class="body">
+
+      <form method="POST">
+        <!--name-->
+        <div class="name">
+          <label for="fname" style="text-align:center">Full name:</label><br>
+          <input type="text" id="fname" name="fname" placeholder="Enter your full name"><br><br>
+          <label for="iname">Item name:</label><br>
+          <input type="text" id="iname" name="iname" placeholder="Enter the item name"><br><br>
+          <label for="quantity">Item quantity:</label><br>
+          <input type="text" id="quantity" name="quantity" placeholder="Enter the item name"><br><br>
+        </div>
+
+        <div class="address">
+          <label for="address" style="text-align:center">Address:</label><br>
+          <input type="text" id="address" name="address" placeholder="Enter your address"><br><br>
+        </div>
+
+      </form>
+
+      <script
+        src="https://www.paypal.com/sdk/js?client-id=AZSM8h2MflxGM0iBCmrJMyTJFtlIn4WIwZS-J6OgU6VLX0S4lgNp8xhVv1RTwL5xfzjw6jRqHdT7iOrr"> // Required. Replace SB_CLIENT_ID with your sandbox client ID.
+        </script>
+      <div id="paypal-button-container"></div>
+
+      <script>
+        paypal.Buttons({
+          createOrder: function () {
+            let full_name = document.getElementById('fname').value;
+            let item_name = document.getElementById('iname').value;
+            let quantity = document.getElementById('quantity').value;
+            let address = document.getElementById('address').value;
+            let request = {
+              full_name: full_name,
+              item_name: item_name,
+              quantity: quantity,
+              address: address
+            }
+            console.log("NAME FROM INPUT: ", full_name)
+            return fetch('http://0.0.0.0:8088/create_order', {
+              method: 'post',
+              headers: {
+                'content-type': 'application/json',
+                'Access-Control-Request-Method': 'POST',
+                'Access-Control-Request-Headers': 'Content-Type, Authorization',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Credentials': 'true'
+              },
+              body: JSON.stringify(request)
+            }).then(function (res) {
+              console.log("response from client: ", res)
+              return res.json();
+            }).then(function (data) {
+              console.log("data sent to client: ", data)
+              return data.orderID
+            })
+          },
+          onApprove: function (data) {
+            console.log("DATA SENT FROM ON APPROVE: ", data)
+            return fetch('http://0.0.0.0:8088/capture_order/' + data.orderID, {
+              method: 'get',
+              headers: {
+                'content-type': 'application/json',
+                'Access-Control-Request-Method': 'POST',
+                'Access-Control-Request-Headers': 'Content-Type, Authorization',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Credentials': 'true'
+              }
+            }).then(function (res) {
+              return res.json();
+            }).then(function (details) {
+              alert('Transaction completed by ' + details.buyer_name + " with email: " + details.buyer_email + '!');
+            })
+          }
+          // createOrder: function (data, actions) {
+          //   // This function sets up the details of the transaction, including the amount and line item details.
+          //   return actions.order.create({
+          //     purchase_units: [{
+          //       amount: {
+          //         value: '0.01'
+          //       }
+          //     }]
+          //   });
+          // },
+          // onApprove: function (data, actions) {
+          //   // This function captures the funds from the transaction.
+          //   return actions.order.capture().then(function (details) {
+          //     // This function shows a transaction success message to your buyer.
+          //     alert('Transaction completed by ' + details.payer.name.given_name);
+          //   });
+          // }
+        }).render('#paypal-button-container');
+
+      </script>
+    </div>
+
+</body>
+
+</html>
